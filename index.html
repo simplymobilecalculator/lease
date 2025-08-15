@@ -1,0 +1,1678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Car Lease Calculator</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the Inter font and to ensure full height for centering */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* Light gray background */
+            min-height: 100vh; /* Allow content to push height */
+            overflow-y: auto; /* Enable scrolling if content overflows */
+            display: block; /* Use block display for natural scrolling */
+        }
+        .container {
+            max-width: 96rem; /* Increased max-width for better two-column display */
+            margin-left: auto; /* Center horizontally */
+            margin-right: auto; /* Center horizontally */
+            padding: 1rem; /* Add padding */
+        }
+        /* Style for the monthly payment display */
+        #monthlyPayment, #dueAtSigningDisplay, #totalCostOfOwnershipDisplay, #effectiveMonthlyCost {
+            min-width: 150px; /* Ensure sufficient width for the display */
+            display: inline-block; /* Allow padding and background */
+            padding: 0.5rem 1rem;
+            background-color: #ecfdf5; /* Light green background */
+            border-radius: 0.5rem; /* Rounded corners */
+            color: #047857; /* Darker green text */
+            text-align: center;
+        }
+        /* Style for the range input (slider) track */
+        input[type="range"]::-webkit-slider-runnable-track {
+            background: #93c5fd; /* Light blue */
+            border-radius: 0.5rem;
+        }
+        input[type="range"]::-moz-range-track {
+            background: #93c5fd; /* Light blue */
+            border-radius: 0.5rem;
+        }
+        input[type="range"]::-ms-track {
+            background: #93c5fd; /* Light blue */
+            border-radius: 0.5rem;
+        }
+        /* Style for the range input (slider) thumb */
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; /* Override default appearance */
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #2563eb; /* Darker blue */
+            cursor: pointer;
+            margin-top: -7px; /* Center thumb vertically */
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); /* Blue shadow */
+        }
+        input[type="range"]::-moz-range-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #2563eb; /* Darker blue */
+            cursor: pointer;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); /* Blue shadow */
+        }
+        input[type="range"]::-ms-thumb {
+            height: 16px;
+            width: 16px;
+            border-radius: 50%;
+            background: #2563eb; /* Darker blue */
+            cursor: pointer;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.3); /* Blue shadow */
+        }
+        /* Required field styling */
+        .required-field-error {
+            border-color: #ef4444 !important; /* Tailwind red-500 */
+            box-shadow: 0 0 0 1px #ef4444 !important; /* Tailwind red-500 */
+        }
+
+        /* Input field for scenario labels */
+        .scenario-label-input::placeholder {
+            color: #9ca3af; /* Tailwind gray-400 for placeholder */
+        }
+        .scenario-label-input {
+            color: #2563eb; /* Tailwind blue-600 for typed text */
+        }
+
+        /* Print-specific styles */
+        @media print {
+            body {
+                background-color: #fff;
+                min-height: auto;
+                display: block;
+                margin: 0;
+                padding: 0;
+            }
+            .container {
+                max-width: none;
+                width: 100%;
+                padding: 1cm;
+                box-shadow: none;
+            }
+            .bg-white, .shadow-lg, .rounded-xl, .transform, .transition-all, .duration-300, .hover\:scale-105, .sticky, .top-4, .self-start {
+                all: unset; /* Remove non-print styles */
+            }
+            /* Hide elements not needed for print */
+            .hidden-print {
+                display: none !important;
+            }
+            button {
+                display: none !important; /* Hide all buttons */
+            }
+            #error-message {
+                display: none !important;
+            }
+            #dueAtSigningDetails, #monthlyPaymentDetails, #totalCostOfOwnershipDetails {
+                display: block !important; /* Always show breakdown on print */
+                background-color: #f0f8ff !important; /* Light blue for breakdown */
+                border: 1px solid #cceeff !important;
+                padding: 0.5em;
+                margin-top: 0.5em;
+            }
+            /* Adjust spacing for print */
+            .mb-4, .mb-6 {
+                margin-bottom: 0.5em !important;
+            }
+            .grid {
+                display: block; /* Stack dropdowns for better readability on print */
+            }
+            .grid > div {
+                margin-bottom: 0.5em;
+            }
+            label {
+                font-weight: bold;
+                margin-right: 0.5em;
+                display: inline-block;
+                width: 150px; /* Align labels */
+            }
+            input, select, textarea {
+                display: inline-block;
+                width: auto !important; /* Allow inputs to take natural width */
+                min-width: 100px;
+            }
+            #monthlyPayment, #dueAtSigningDisplay, #totalCostOfOwnershipDisplay, #effectiveMonthlyCost {
+                background-color: #e0ffe0; /* Slightly darker green for print */
+                color: #000;
+                border: 1px solid #ccc;
+            }
+            h1, h2, h3 {
+                color: #000 !important;
+            }
+            /* Ensure columns stack for print if they were flex-row */
+            .flex.flex-col.md\:flex-row {
+                flex-direction: column !important;
+            }
+            .md\:w-1\/2 {
+                width: 100% !important;
+            }
+            .md\:space-x-8 {
+                margin-left: 0 !important;
+                margin-right: 0 !important;
+            }
+            .required-field-error {
+                border-color: #ccc !important; /* No red border on print */
+                box-shadow: none !important;
+            }
+            .footer-print {
+                display: block !important;
+                text-align: center;
+                margin-top: 1cm;
+                font-size: 0.8em;
+                color: #555;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="container relative">
+        <!-- Title and Top Buttons -->
+        <div class="relative mb-6">
+            <!-- Clear Button at top left -->
+            <button onclick="resetCalculator()" class="absolute top-0 left-0 text-gray-600 hover:text-gray-800 text-sm font-semibold py-1 px-3 rounded-lg border border-gray-300 hover:bg-gray-100 hidden-print z-10">
+                Clear
+            </button>
+
+            <!-- Print Button at top right -->
+            <button onclick="window.print()" class="absolute top-0 right-0 text-gray-600 hover:text-gray-800 text-sm font-semibold py-1 px-3 rounded-lg border border-gray-300 hover:bg-gray-100 hidden-print z-10">
+                Print Page
+            </button>
+
+            <h1 class="text-3xl font-extrabold text-gray-800 text-center mx-auto" style="padding-top: 1rem;">
+                Advanced Car Lease Calculator
+            </h1>
+        </div>
+
+        <!-- Main Calculator Content -->
+        <div class="bg-white shadow-lg rounded-xl p-8 transform transition-all duration-300 hover:scale-105 flex flex-col md:flex-row md:space-x-8">
+            <!-- Left Column for Inputs -->
+            <div class="md:w-1/2 flex-shrink-0">
+                <!-- Make, Model, Trim, Drive Selection (Compact) -->
+                <div class="grid grid-cols-2 gap-3 mb-6">
+                    <div>
+                        <label for="carMake" class="block text-gray-700 text-xs font-semibold mb-1">Make:</label>
+                        <select id="carMake" onchange="populateModels()" class="text-sm shadow-sm appearance-none border rounded-lg w-full py-1.5 px-2 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                            <option value="">Select Make</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="carModel" class="block text-gray-700 text-xs font-semibold mb-1">Model:</label>
+                        <select id="carModel" onchange="populateTrims()" class="text-sm shadow-sm appearance-none border rounded-lg w-full py-1.5 px-2 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200" disabled>
+                            <option value="">Select Model</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="carTrim" class="block text-gray-700 text-xs font-semibold mb-1">Trim:</label>
+                        <select id="carTrim" onchange="populateDriveTypes()" class="text-sm shadow-sm appearance-none border rounded-lg w-full py-1.5 px-2 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200" disabled>
+                            <option value="">Select Trim</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="carDrive" class="block text-gray-700 text-xs font-semibold mb-1">Drive:</label>
+                        <select id="carDrive" onchange="calculateLease()" class="text-sm shadow-sm appearance-none border rounded-lg w-full py-1.5 px-2 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200" disabled>
+                            <option value="">Select Drive</option>
+                        </select>
+                    </div>
+                </div>
+                <!-- End Make, Model, Trim, Drive Selection -->
+
+                <!-- Core Lease Inputs -->
+                <div class="mb-4">
+                    <label for="msrp" class="block text-gray-700 text-sm font-semibold mb-2">MSRP ($):</label>
+                    <input type="number" id="msrp" value="40000" oninput="roundAndCalculate(this); updateSellingPriceFromPercentage(); updateDiscountPercentageFromSellingPrice()" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                </div>
+
+                <div class="mb-4 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                    <label for="sellingPrice" class="block text-gray-700 text-sm font-semibold mb-2 mt-0">Selling Price ($):</label>
+                    <input type="number" id="sellingPrice" value="37000" oninput="roundAndCalculate(this); updateDiscountPercentageFromSellingPrice()" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+
+                    <label for="discountPercentage" class="block text-gray-700 text-xs italic font-semibold mt-4 mb-2 flex justify-between items-baseline">
+                        <span>Discount Off MSRP (%):
+                            <span id="discountPercentageValue" class="font-normal text-blue-600 ml-2">7.50%</span>
+                        </span>
+                        <span id="discountAmountValue" class="font-normal text-gray-500 ml-2">($0 Discount)</span>
+                    </label>
+                    <input type="range" id="discountPercentage" min="0" max="30" value="7.5" step="0.01" oninput="updateSellingPriceFromPercentage()" class="w-full h-1.5 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-600">
+                </div>
+
+                <!-- New Horizontal line break -->
+                <div class="border-t-2 border-dashed border-gray-300 my-6"></div>
+
+                <!-- Reordered Incentives -->
+                <div class="mb-4">
+                    <label for="taxedIncentives" class="block text-gray-700 text-sm font-semibold mb-2">Taxed Incentives ($):</label>
+                    <input type="number" id="taxedIncentives" value="1000" oninput="roundAndCalculate(this)" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                </div>
+                <div class="mb-4">
+                    <label for="untaxedIncentives" class="block text-gray-700 text-sm font-semibold mb-2">Untaxed Incentives ($):</label>
+                    <input type="number" id="untaxedIncentives" value="0" oninput="roundAndCalculate(this)" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                </div>
+
+                <div class="mb-4">
+                    <label for="downPayment" class="block text-gray-700 text-sm font-semibold mb-2">Down Payment ($):</label>
+                    <input type="number" id="downPayment" value="0" oninput="roundAndCalculate(this)" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                </div>
+
+                <div class="mb-4">
+                    <label for="tradeInEquity" class="block text-gray-700 text-sm font-semibold mb-2">Trade-in Equity ($):</label>
+                    <input type="number" id="tradeInEquity" value="0" oninput="roundAndCalculate(this)" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                </div>
+
+                <div class="mb-4">
+                    <label for="residualValue" class="block text-gray-700 text-sm font-semibold mb-2">Residual Value (% of MSRP):</label>
+                    <input type="number" id="residualValue" value="55" step="0.1" oninput="calculateLease()" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                    <p class="text-xs text-gray-500 italic mt-1">Estimated Residual: <span id="estimatedResidualDisplay">$0</span></p>
+                </div>
+
+                <div class="mb-4">
+                    <label for="moneyFactor" class="block text-gray-700 text-sm font-semibold mb-2">Money Factor (e.g., 0.00125):</label>
+                    <input type="number" id="moneyFactor" step="0.00001" value="0.00135" oninput="calculateLease()" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                    <p class="text-xs text-gray-500 italic mt-1">Estimated APR: <span id="estimatedApr">0.00%</span></p>
+                </div>
+
+                <div class="mb-4">
+                    <label for="leaseTerm" class="block text-gray-700 text-sm font-semibold mb-2">Lease Term (months):</label>
+                    <select id="leaseTerm" onchange="calculateLease()" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                        <option value="13">13 months</option>
+                        <option value="24" selected>24 months</option>
+                        <option value="30">30 months</option>
+                        <option value="36">36 months</option>
+                        <option value="39">39 months</option>
+                    </select>
+                </div>
+
+                <!-- Mileage Dropdown -->
+                <div class="mb-4">
+                    <label for="mileage" class="block text-gray-700 text-sm font-semibold mb-2">Mileage (Annual):</label>
+                    <select id="mileage" onchange="calculateLease()" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                        <option value="5000">5,000 miles</option>
+                        <option value="7500">7,500 miles</option>
+                        <option value="10000" selected>10,000 miles</option>
+                        <option value="12000">12,000 miles</option>
+                        <option value="15000">15000 miles</option>
+                    </select>
+                </div>
+
+                <div class="mb-6">
+                    <label for="taxRate" class="block text-gray-700 text-sm font-semibold mb-2">Sales Tax Rate (%):</label>
+                    <input type="number" id="taxRate" value="8.75" step="0.1" oninput="calculateLease()" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                </div>
+
+                <!-- Horizontal line break -->
+                <div class="border-t-2 border-dashed border-gray-300 my-6"></div>
+
+                <!-- Fees -->
+                <div class="mb-4">
+                    <label for="acquisitionFee" class="block text-gray-700 text-sm font-semibold mb-2">Acquisition Fee ($):</label>
+                    <input type="number" id="acquisitionFee" value="" placeholder="e.g. 895" oninput="roundAndCalculate(this)" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                    <div class="flex items-center mt-2">
+                        <input type="checkbox" id="acqFeePaidUpfrontCheckbox" onchange="calculateLease()" class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="acqFeePaidUpfrontCheckbox" class="text-gray-700 text-sm">Acquisition fee paid upfront</label>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="docFee" class="block text-gray-700 text-sm font-semibold mb-2">Dealer/Doc Fee ($):</label>
+                    <input type="number" id="docFee" value="85" oninput="roundAndCalculate(this)" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                    <div class="flex items-center mt-2">
+                        <input type="checkbox" id="docFeePaidUpfrontCheckbox" onchange="calculateLease()" class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
+                        <label for="docFeePaidUpfrontCheckbox" class="text-gray-700 text-sm">Doc fee paid upfront</label>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="licenseRegFees" class="block text-gray-700 text-sm font-semibold mb-2">License & Registration Fees ($):</label>
+                    <input type="number" id="licenseRegFees" value="" placeholder="e.g. 400" oninput="roundAndCalculate(this)" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                    <div class="flex items-center mt-2">
+                        <input type="checkbox" id="licRegPaidUpfrontCheckbox" onchange="calculateLease()" class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded" checked>
+                        <label for="licRegPaidUpfrontCheckbox" class="text-gray-700 text-sm">License & Registration paid upfront</label>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="msds" class="block text-gray-700 text-sm font-semibold mb-2">Multiple Security Deposits (MSD):</label>
+                    <input type="number" id="msds" value="0" min="0" max="10" step="1" oninput="calculateLease()" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                </div>
+                <div class="mb-6">
+                    <label for="dispositionFee" class="block text-gray-700 text-sm font-semibold mb-2">Disposition Fee ($):</label>
+                    <input type="number" id="dispositionFee" value="" placeholder="e.g. 395" oninput="roundAndCalculate(this)" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200">
+                </div>
+
+                <!-- Zero Drive Off Toggle -->
+                <div class="mb-6 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <div class="flex items-center">
+                        <input type="checkbox" id="zeroDriveOffCheckbox" onchange="calculateLease()" class="mr-2 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                        <label for="zeroDriveOffCheckbox" class="text-blue-800 text-base font-semibold">Zero Drive Off</label>
+                    </div>
+                    <p class="text-xs text-blue-700 mt-1">Roll all upfront fees and cash into the monthly payment.</p>
+                </div>
+
+                <!-- Notes Field -->
+                <div class="mb-6 w-full"> <!-- Added w-full here explicitly, though parent handles it -->
+                    <label for="notesField" class="block text-gray-700 text-sm font-semibold mb-2">Notes:</label>
+                    <textarea id="notesField" rows="3" class="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200" placeholder="Add any specific notes about this lease scenario here..."></textarea>
+                </div>
+            </div>
+
+            <!-- Right Column for Outputs (Sticky) -->
+            <div class="md:w-1/2 mt-8 md:mt-0 sticky top-4 self-start">
+                <h2 class="text-2xl font-bold text-red-700 mb-4 text-center md:text-left">Financial Summary:</h2>
+                
+                <!-- Total Due at Signing -->
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-6 text-center md:text-left">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Total Due at Signing:</h3>
+                    <span id="dueAtSigningDisplay" class="text-3xl font-extrabold text-green-600 block">$0</span>
+                    <span onclick="toggleDueAtSigningDetails()" class="cursor-pointer text-sm text-blue-600 hover:underline">
+                        (Click for details)
+                    </span>
+                    <!-- Due at Signing Breakdown -->
+                    <div id="dueAtSigningDetails" class="bg-blue-50 p-2 rounded-lg border border-blue-200 text-sm text-gray-700 mt-2 hidden">
+                        <h4 class="font-semibold mb-1">Breakdown:</h4>
+                        <p>First Month Payment: <span id="detailFirstMonth"></span></p>
+                        <p id="downPaymentLine">Down Payment: <span id="detailDownPayment"></span></p>
+                        <p id="upfrontFeesLine">Upfront Fees: <span id="detailUpfrontFees"></span></p>
+                        <p id="msdsLine">Multiple Security Deposits: <span id="detailMsdsAmount"></span></p>
+                        <p>Total Upfront Taxes: <span id="detailTotalUpfrontTaxes"></span></p> <!-- Combined taxes -->
+                    </div>
+                </div>
+
+                <!-- Estimated Monthly Payment -->
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 mb-6 text-center md:text-left">
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">Estimated Monthly Payment:</h3>
+                    <span id="monthlyPayment" class="text-3xl font-extrabold text-green-600">$0</span>
+                    <p class="text-xs text-gray-500 italic mt-1">
+                        <span id="monthlyPaymentBreakdownShort" onclick="toggleMonthlyBreakdownDetails()" class="cursor-pointer text-blue-600 hover:underline"></span>
+                    </p>
+                    <!-- Monthly Payment Detailed Breakdown -->
+                    <div id="monthlyPaymentDetails" class="bg-blue-50 p-2 rounded-lg border border-blue-200 text-sm text-gray-700 mt-2 hidden">
+                        <h4 class="font-semibold mb-1">Detailed Breakdown:</h4>
+                        <p>Depreciation Portion: <span id="detailDepreciation"></span></p>
+                        <p>Rent Charge Portion: <span id="detailRentCharge"></span></p>
+                        <p>Total Monthly Tax: <span id="detailMonthlyTax"></span></p>
+                    </div>
+                </div>
+
+                <!-- Total Cost of Ownership & Effective Monthly Cost (Made smaller) -->
+                <div class="bg-gray-50 p-3 rounded-lg border border-gray-200 text-center md:text-left">
+                    <h3 class="text-lg font-bold text-gray-800 mb-2">Total Lease Cost:</h3>
+                    <p class="mb-2">Total Cost of Ownership: 
+                        <span id="totalCostOfOwnershipDisplay" class="font-semibold text-gray-800 text-xl block">$0</span>
+                    </p>
+                    <br>
+                    <br> <!-- Two line breaks as requested -->
+                    <p>Effective Monthly Cost: <span id="effectiveMonthlyCost" class="font-semibold text-gray-800 text-xl block">$0</span></p>
+                    <span onclick="toggleTotalCostOfOwnershipDetails()" class="cursor-pointer text-sm text-blue-600 hover:underline ml-1">(Click for details)</span>
+                    
+                    <!-- Total Cost of Ownership Breakdown -->
+                    <div id="totalCostOfOwnershipDetails" class="bg-blue-50 p-2 rounded-lg border border-blue-200 text-sm text-gray-700 mt-2 hidden">
+                        <h4 class="font-semibold mb-1">Detailed Breakdown:</h4>
+                        <p>Depreciation: <span id="detailTCODepreciation"></span></p>
+                        <p>Rent Charge: <span id="detailTCORentCharge"></span></p>
+                        <p>Total Taxes: <span id="detailTCOTaxes"></span></p>
+                        <p>Non-Capitalized Payments: <span id="detailTCONonCapitalizedPayments"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <p id="error-message" class="text-red-500 mt-4 text-center hidden text-sm"></p>
+        </div>
+
+        <!-- Horizontal line break for buttons outside the main flex container -->
+        <div class="border-t-2 border-dashed border-gray-300 my-6 hidden-print"></div>
+
+        <!-- Scenario Save/Load Section -->
+        <div class="text-center mt-8 hidden-print flex flex-col sm:flex-row justify-between items-center gap-4">
+            <!-- Left: Save Current Scenario -->
+            <div class="flex items-center gap-2 mb-4 sm:mb-0 w-full sm:w-1/2 md:w-auto">
+                <input type="text" id="newScenarioLabelInput" placeholder="Enter name for this scenario" class="flex-grow shadow-sm appearance-none border rounded-lg py-1.5 px-2 text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 scenario-label-input">
+                <button onclick="saveCurrentScenario()" class="text-blue-600 hover:text-blue-800 text-base font-semibold py-2 px-4 rounded-lg border border-blue-300 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    Save Current
+                </button>
+            </div>
+
+            <!-- Right: Load Saved Scenarios -->
+            <div class="flex flex-col sm:flex-row gap-4 w-full sm:w-1/2 md:w-auto">
+                <button id="scenario1LoadBtn" onclick="loadScenario(1)" class="text-gray-600 hover:text-gray-800 text-base font-semibold py-2 px-4 rounded-lg border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    Scenario 1 (Empty)
+                </button>
+                <button id="scenario2LoadBtn" onclick="loadScenario(2)" class="text-gray-600 hover:text-gray-800 text-base font-semibold py-2 px-4 rounded-lg border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    Scenario 2 (Empty)
+                </button>
+                <button id="scenario3LoadBtn" onclick="loadScenario(3)" class="text-gray-600 hover:text-gray-800 text-base font-semibold py-2 px-4 rounded-lg border border-gray-300 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                    Scenario 3 (Empty)
+                </button>
+            </div>
+        </div>
+
+
+        <!-- Additional Printer Icon at Bottom -->
+        <div class="text-center mt-6 hidden-print">
+            <button onclick="window.print()" class="text-gray-500 hover:text-gray-700 text-xl align-middle p-2 rounded-full hover:bg-gray-200 transition duration-200">
+                🖨️ Print Page
+            </button>
+        </div>
+
+        <!-- Footer -->
+        <footer class="text-center text-gray-500 text-sm mt-8 py-4 border-t border-gray-200 footer-print">
+            © Copyright Simply Mobile. All rights reserved.
+        </footer>
+
+    </div>
+
+    <script>
+        // Helper function to display messages to the user
+        function displayMessage(message, isError) {
+            const errorMessageElement = document.getElementById('error-message');
+            errorMessageElement.innerText = message;
+            if (isError) {
+                errorMessageElement.classList.remove('hidden');
+                errorMessageElement.classList.add('text-red-500');
+            } else {
+                errorMessageElement.classList.add('hidden');
+            }
+        }
+
+        // Data structure for car makes, models, and trims (Comprehensive US market vehicles)
+        const carData = {
+            "Acura": {
+                "Integra": ["Base", "A-Spec", "Type S"],
+                "TLX": ["Base", "A-Spec", "Type S"],
+                "MDX": ["Base", "Technology", "A-Spec", "Advance", "Type S"],
+                "ZDX": ["A-Spec", "Type S"], // Added ZDX
+                "ADX": ["Base", "Technology", "A-Spec"], // Added ADX
+                "RDX": ["Base", "Technology", "A-Spec", "Advance"]
+            },
+            "Alfa Romeo": {
+                "Giulia": ["Sprint", "Ti", "Veloce", "Quadrifoglio"],
+                "Stelvio": ["Sprint", "Ti", "Veloce", "Quadrifoglio"]
+            },
+            "Audi": {
+                "A3 Sedan": ["Premium", "Premium Plus", "Prestige"],
+                "A4 Sedan": ["40 TFSI quattro", "45 TFSI quattro", "S4 Sedan"],
+                "A5 Coupe": ["40 TFSI quattro", "45 TFSI quattro", "S5 Coupe"],
+                "A6 Sedan": ["45 TFSI quattro", "55 TFSI quattro", "S6 Sedan"],
+                "A7 Sportback": ["55 TFSI quattro", "S7 Sportback", "RS 7 Sportback"],
+                "A8 Sedan": ["55 TFSI quattro", "60 TFSI quattro", "S8 Sedan"],
+                "Q3 SUV": ["Premium", "Premium Plus", "S line"],
+                "Q4 e-tron SUV": ["Premium", "Premium Plus", "Prestige"],
+                "Q5 SUV": ["40 TFSI quattro", "45 TFSI quattro", "SQ5 SUV"],
+                "Q7 SUV": ["45 TFSI quattro", "55 TFSI quattro", "SQ7"],
+                "Q8 SUV": ["55 TFSI quattro", "SQ8", "RS Q8"],
+                "e-tron GT": ["e-tron GT quattro", "RS e-tron GT"]
+            },
+            "BMW": {
+                "2 Series Coupe": ["230i", "M240i"],
+                "3 Series Sedan": ["330i", "330e", "M340i", "M3"],
+                "4 Series Coupe": ["430i", "M440i", "M4"],
+                "5 Series Sedan": ["530i", "540i", "550e", "M5"],
+                "7 Series Sedan": ["740i", "760i xDrive", "i7"],
+                "X1 SUV": ["xDrive28i"],
+                "X2 SUV": ["xDrive28i"],
+                "X3 SUV": ["sDrive30i", "xDrive30i", "M40i", "X3 M"],
+                "X4 SUV": ["xDrive30i", "M40i", "X4 M"],
+                "X5 SUV": ["sDrive40i", "xDrive40i", "xDrive50e", "M60i", "X5 M"],
+                "X6 SUV": ["xDrive40i", "M60i", "X6 M"],
+                "X7 SUV": ["xDrive40i", "M60i", "Alpina XB7"],
+                "i5 Sedan": ["eDrive40", "M60"],
+                "i7 Sedan": ["eDrive50", "xDrive60", "M70"],
+                "iX SUV": ["xDrive50", "M60"]
+            },
+            "Buick": {
+                "Encore GX": ["Preferred", "Select", "Essence"],
+                "Envista": ["Preferred", "Sport Touring", "Avenir"],
+                "Envision": ["Preferred", "Sport Touring", "Avenir"],
+                "Enclave": ["Essence", "Premium", "Avenir"]
+            },
+            "Cadillac": {
+                "CT4 Sedan": ["Luxury", "Premium Luxury", "Sport", "V-Series", "Blackwing"],
+                "CT5 Sedan": ["Luxury", "Premium Luxury", "Sport", "V-Series", "Blackwing"],
+                "XT4 SUV": ["Luxury", "Premium Luxury", "Sport"],
+                "XT5 SUV": ["Luxury", "Premium Luxury", "Sport"],
+                "XT6 SUV": ["Luxury", "Premium Luxury", "Sport"],
+                "Escalade SUV": ["Luxury", "Premium Luxury", "Sport", "Platinum", "ESV", "V-Series"],
+                "Lyriq EV": ["Tech", "Luxury", "Sport"],
+                "Optiq EV": ["Luxury", "Sport"]
+            },
+            "Chevrolet": {
+                "Malibu": ["LS", "RS", "LT", "2LT"],
+                "Blazer": ["2LT", "3LT", "RS", "Premier"],
+                "Equinox": ["LS", "LT", "RS", "Premier"],
+                "Traverse": ["LS", "LT Cloth", "LT Leather", "RS", "Premier", "High Country"],
+                "Tahoe": ["LS", "LT", "RST", "Z71", "Premier", "High Country"],
+                "Suburban": ["LS", "LT", "RST", "Z71", "Premier", "High Country"],
+                "Colorado": ["WT", "LT", "Trail Boss", "Z71", "ZR2"],
+                "Silverado 1500": ["WT", "Custom", "LT", "RST", "LTZ", "High Country", "ZR2"],
+                "Trax": ["LS", "1RS", "LT", "2RS", "ACTIV"],
+                "Bolt EV": ["1LT", "2LT"],
+                "Bolt EUV": ["LT", "Premier"],
+                "Blazer EV": ["1LT", "2LT", "RS", "SS"],
+                "Equinox EV": ["1LT", "2LT", "3LT"]
+            },
+            "Chrysler": {
+                "Pacifica": ["Touring", "Touring L", "Limited", "Pinnacle"],
+                "Pacifica Hybrid": ["Select", "Pinnacle"]
+            },
+            "Dodge": {
+                "Charger": ["SXT", "GT", "R/T", "Scat Pack", "Hellcat"],
+                "Durango": ["SXT", "GT", "R/T", "Citadel", "SRT 392", "SRT Hellcat"]
+            },
+            "Ford": {
+                "Mustang": ["EcoBoost", "GT", "Dark Horse"],
+                "Bronco Sport": ["Base", "Big Bend", "Heritage", "Outer Banks", "Badlands"],
+                "Bronco": ["Base", "Big Bend", "Black Diamond", "Outer Banks", "Badlands", "Wildtrak", "Raptor"],
+                "Escape": ["Base", "Active", "ST-Line", "ST-Line Select", "ST-Line Elite", "Platinum", "Hybrid", "PHEV"],
+                "Edge": ["SE", "SEL", "ST-Line", "Titanium", "ST"],
+                "Explorer": ["Base", "XLT", "ST-Line", "Limited", "ST", "King Ranch", "Platinum"],
+                "Expedition": ["XL STX", "XLT", "Limited", "King Ranch", "Platinum", "Timberline", "MAX"],
+                "F-150": ["XL", "XLT", "Lariat", "King Ranch", "Platinum", "Limited", "Raptor", "Tremor", "Lightning"],
+                "Maverick": ["XL", "XLT", "Lariat"],
+                "Ranger": ["XL", "XLT", "Lariat", "Raptor"],
+                "Mustang Mach-E": ["Select", "Premium", "California Route 1", "GT"]
+            },
+            "Genesis": {
+                "G70 Sedan": ["2.0T", "3.3T"],
+                "G80 Sedan": ["2.5T", "3.5T Sport", "Electrified G80"],
+                "G90 Sedan": ["3.5T e-Supercharger"],
+                "GV60 EV": ["Advanced", "Performance"],
+                "GV70 SUV": ["2.5T", "3.5T Sport", "Electrified GV70"],
+                "GV80 SUV": ["2.5T", "3.5T"]
+            },
+            "GMC": {
+                "Acadia": ["Elevation", "AT4", "Denali"],
+                "Terrain": ["SLE", "SLT", "AT4", "Denali"],
+                "Sierra 1500": ["Pro", "SLE", "Elevation", "SLT", "AT4", "Denali", "Denali Ultimate", "AT4X", "Denali EV"],
+                "Sierra HD": ["Pro", "SLE", "SLT", "AT4", "Denali"],
+                "Yukon": ["SLE", "SLT", "AT4", "Denali", "Denali Ultimate"]
+            },
+            "Honda": {
+                "Civic": ["LX", "Sport", "EX", "Touring", "Si", "Type R", "Hatchback"],
+                "CR-V": ["LX", "EX", "Sport Hybrid", "EX-L", "Sport-L Hybrid", "Touring Hybrid"],
+                "Accord": ["LX", "EX", "Sport", "EX-L", "Touring Hybrid"],
+                "Pilot": ["Sport", "EX-L", "TrailSport", "Touring", "Elite"],
+                "HR-V": ["LX", "Sport", "EX-L"],
+                "Odyssey": ["EX", "EX-L", "Touring", "Elite"],
+                "Passport": ["EX-L", "TrailSport", "Black Edition"]
+            },
+            "Hyundai": {
+                "Elantra": ["SE", "SEL", "Limited", "N Line", "N"],
+                "Kona": ["SE", "SEL", "N Line", "Limited", "Electric"],
+                "Sonata": ["SE", "SEL", "N Line", "Limited", "Hybrid"],
+                "Tuccon": ["SE", "SEL", "N Line", "Limited", "Hybrid", "PHEV"],
+                "Santa Fe": ["SE", "SEL", "Limited", "Calligraphy", "Hybrid", "PHEV"],
+                "Palisade": ["SE", "SEL", "Limited", "Calligraphy"],
+                "Venue": ["SE", "SEL", "Limited"],
+                "IONIQ 5": ["SE Standard Range", "SE", "SEL", "Limited"],
+                "IONIQ 6": ["SE Standard Range", "SE", "SEL", "Limited"]
+            },
+            "Infiniti": {
+                "Q50 Sedan": ["Pure", "Luxe", "Sensory", "Red Sport 400"],
+                "QX50 SUV": ["Pure", "Luxe", "Sensory", "Autograph"],
+                "QX55 SUV": ["Luxe", "Essential", "Sensory"],
+                "QX60 SUV": ["Pure", "Luxe", "Sensory", "Autograph"],
+                "QX80 SUV": ["Luxe", "Premium Select", "Sensory"]
+            },
+            "Jaguar": {
+                "F-PACE SUV": ["P250", "P400", "SVR"],
+                "E-PACE SUV": ["P250"],
+                "I-PACE EV": ["EV400"]
+            },
+            "Jeep": {
+                "Wrangler": ["Sport", "Sport S", "Sahara", "Rubicon", "Wrangler 4xe", "Rubicon 392"],
+                "Grand Cherokee": ["Laredo", "Limited", "Overland", "Summit", "Grand Cherokee 4xe", "Trailhawk 4xe", "Summit Reserve"],
+                "Cherokee": ["Altitude Lux", "Limited"],
+                "Compass": ["Sport", "Latitude", "Latitude Lux", "Limited", "Trailhawk"],
+                "Renegade": ["Latitude", "Limited", "Trailhawk"],
+                "Gladiator": ["Sport", "Sport S", "Mojave", "Rubicon"],
+                "Wagoneer": ["Series II", "Series III"],
+                "Grand Wagoneer": ["Series I", "Series II", "Series III"],
+                "Wagoneer S": ["Launch Edition", "Summit", "Trailhawk"] // Added Wagoneer S
+            },
+            "Kia": {
+                "Forte": ["LX", "LXS", "GT-Line", "GT"],
+                "K5": ["LX", "LXS", "GT-Line", "EX", "GT"],
+                "Rio": ["LX", "S"],
+                "Sportage": ["LX", "EX", "SX-Prestige", "X-Line AWD", "X-Pro AWD", "Hybrid", "PHEV"],
+                "Sorento": ["LX", "S", "EX", "SX", "SX Prestige", "X-Line", "Hybrid", "PHEV"],
+                "Telluride": ["LX", "S", "EX", "SX", "SX Prestige", "X-Line", "X-Pro"],
+                "Seltos": ["LX", "S", "EX", "SX"],
+                "Soul": ["LX", "S", "GT-Line", "EX"],
+                "Carnival MPV": ["LX", "LX Seat Package", "EX", "SX", "SX Prestige"],
+                "EV6": ["Light", "Wind", "GT-Line", "GT"],
+                "Niro EV": ["Wind", "Wave"]
+            },
+            "Land Rover": {
+                "Discovery Sport": ["S", "R-Dynamic S"],
+                "Discovery": ["S", "R-Dynamic S"],
+                "Defender 90": ["S", "SE", "X-Dynamic SE", "X", "V8"],
+                "Defender 110": ["S", "SE", "X-Dynamic SE", "X", "V8"],
+                "Range Rover Evoque": ["S", "Dynamic SE"],
+                "Range Rover Velar": ["S", "Dynamic SE"],
+                "Range Rover Sport": ["SE", "Dynamic SE", "Autobiography", "SV"],
+                "Range Rover": ["SE", "Autobiography", "SV"]
+            },
+            "Lexus": {
+                "IS Sedan": ["IS 300", "IS 350", "IS 500 F SPORT Performance"],
+                "ES Sedan": ["ES 250", "ES 350", "ES 300h"],
+                "LS Sedan": ["LS 500", "LS 500h"],
+                "NX SUV": ["NX 250", "NX 350", "NX 350h", "NX 450h+"],
+                "RX SUV": ["RX 350", "RX 350h", "RX 450h+", "RX 500h F SPORT Performance"],
+                "GX SUV": ["Premium", "Premium+", "Luxury", "Luxury+"],
+                "LX SUV": ["Standard", "Premium", "F SPORT Handling", "Luxury", "Ultra Luxury"],
+                "RZ EV": ["450e Premium", "450e Luxury"]
+            },
+            "Lincoln": {
+                "Corsair": ["Standard", "Reserve", "Grand Touring"],
+                "Nautilus": ["Standard", "Reserve", "Black Label"],
+                "Aviator": ["Standard", "Reserve", "Grand Touring", "Black Label"],
+                "Navigator": ["Standard", "L", "Reserve", "L Reserve", "Black Label", "L Black Label"]
+            },
+            "Lucid": {
+                "Air": ["Pure", "Touring", "Grand Touring", "Sapphire"]
+            },
+            "Mazda": {
+                "Mazda3 Sedan": ["2.5 S", "2.5 Carbon Edition", "2.5 Turbo"],
+                "Mazda3 Hatchback": ["2.5 S", "2.5 Carbon Edition", "2.5 Turbo"],
+                "CX-30": ["2.5 S", "2.5 S Select", "2.5 S Premium", "2.5 Turbo"],
+                "CX-5": ["2.5 S", "2.5 S Select", "2.5 S Premium", "2.5 S Premium Plus", "2.5 Turbo"],
+                "CX-50": ["2.5 S", "2.5 S Select", "2.5 S Premium", "2.5 S Premium Plus", "2.5 Turbo"],
+                "CX-90": ["3.3 Turbo Select", "3.3 Turbo Preferred", "3.3 Turbo Premium", "PHEV Preferred", "PHEV Premium"],
+                "MX-5 Miata": ["Sport", "Club", "Grand Touring"]
+            },
+            "Mercedes-Benz": {
+                "C-Class Sedan": ["C 300 Sedan", "AMG C 43 Sedan"],
+                "E-Class Sedan": ["E 350 Sedan", "E 450 Sedan", "AMG E 53 Sedan"],
+                "S-Class Sedan": ["S 500 Sedan", "S 580 Sedan"],
+                "GLA SUV": ["GLA 250", "AMG GLA 35"],
+                "GLB SUV": ["GLB 250", "AMG GLB 35"],
+                "GLC SUV": ["GLC 300 SUV", "AMG GLC 43 SUV"],
+                "GLE SUV": ["GLE 350 SUV", "GLE 450 SUV", "GLE 53 AMG SUV", "GLE 63 S AMG SUV"],
+                "GLS SUV": ["GLS 450", "GLS 580", "AMG GLS 63"],
+                "EQE Sedan": ["350+", "350 4MATIC", "500 4MATIC", "AMG EQE"],
+                "EQS Sedan": ["450+", "450 4MATIC", "580 4MATIC", "AMG EQS"],
+                "EQE SUV": ["350+", "350 4MATIC", "500 4MATIC"],
+                "EQS SUV": ["450+", "450 4MATIC", "580 4MATIC"]
+            },
+            "Mini": {
+                "Cooper Hardtop 2 Door": ["Classic", "Signature", "Iconic"],
+                "Cooper Hardtop 4 Door": ["Classic", "Signature", "Iconic"],
+                "Countryman": ["Cooper", "Cooper All4", "Cooper S", "Cooper S All4", "John Cooper Works"]
+            },
+            "Mitsubishi": {
+                "Mirage": ["ES", "LE", "Black Edition", "SE"],
+                "Outlander Sport": ["ES", "LE", "SE", "GT"],
+                "Outlander": ["ES", "SE", "SE Black Edition", "SEL", "SEL Black Edition", "Ralliart"]
+            },
+            "Nissan": {
+                "Versa": ["S", "SV", "SR"],
+                "Sentra": ["S", "SV", "SR"],
+                "Altima": ["S", "SV", "SR", "SL", "SR VC-Turbo"],
+                "Maxima": ["SV", "SR", "Platinum"],
+                "Kicks": ["S", "SV", "SR"],
+                "Rogue": ["S", "SV", "SL", "Platinum"],
+                "Murano": ["S", "SV", "SL", "Platinum"],
+                "Pathfinder": ["S", "SV", "SL", "Rock Creek", "Platinum"],
+                "Titan": ["S", "SV", "PRO-4X", "Platinum Reserve"],
+                "Frontier": ["S", "SV", "PRO-X", "PRO-4X"],
+                "Ariya EV": ["Engage", "Evolve+", "Empower+", "Platinum+"]
+            },
+            "Porsche": {
+                "Macan": ["Base", "T", "S", "GTS"],
+                "Cayenne": ["Base", "E-Hybrid", "S", "GTS", "Turbo E-Hybrid"],
+                "Taycan": ["Base", "4S", "GTS", "Turbo", "Turbo S"],
+                "Panamera": ["Base", "4", "4S", "GTS", "Turbo S"]
+            },
+            "Ram": {
+                "1500": ["Tradesman", "Big Horn/Lone Star", "Laramie", "Rebel", "Limited Longhorn", "Limited", "TRX"]
+            },
+            "Subaru": {
+                "Impreza": ["Base", "Sport", "RS"],
+                "Legacy": ["Base", "Premium", "Limited", "Sport", "Touring XT"],
+                "Crosstrek": ["Base", "Premium", "Sport", "Limited", "Wilderness"],
+                "Forester": ["Base", "Premium", "Sport", "Limited", "Touring"],
+                "Outback": ["Base", "Premium", "Onyx Edition", "Limited", "Touring", "Wilderness"],
+                "Ascent": ["Base", "Premium", "Onyx Edition", "Limited", "Touring"],
+                "WRX": ["Base", "Premium", "Limited", "GT"],
+                "BRZ": ["Premium", "Limited"]
+            },
+            "Tesla": {
+                "Model 3": ["Rear-Wheel Drive", "Long Range AWD", "Performance"],
+                "Model Y": ["Long Range AWD", "Performance"],
+                "Model S": ["Dual Motor AWD", "Plaid"],
+                "Model X": ["Dual Motor AWD", "Plaid"]
+            },
+            "Toyota": {
+                "Corolla": ["LE", "SE", "XSE", "Hybrid", "Hatchback", "GR"],
+                "Camry": ["LE", "SE", "XLE", "XSE", "TRD", "Hybrid"],
+                "RAV4": ["LE", "XLE", "XLE Premium", "Adventure", "Limited", "TRD Off-Road", "Hybrid", "Prime"],
+                "Highlander": ["L", "LE", "XLE", "Limited", "Platinum", "Hybrid"],
+                "Tacoma": ["SR", "SR5", "TRD Sport", "TRD Off-Road", "Limited", "TRD Pro"],
+                "Tundra": ["SR", "SR5", "Limited", "Platinum", "1794 Edition", "TRD Pro", "Capstone"],
+                "4Runner": ["SR5", "TRD Sport", "TRD Off-Road", "Limited", "TRD Pro"],
+                "Sienna": ["LE", "XLE", "XSE", "Limited", "Platinum"],
+                "Prius": ["LE", "XLE", "Limited"],
+                "Crown": ["XLE", "Limited", "Platinum"],
+                "GR Supra": ["2.0", "3.0", "3.0 Premium", "A91-CF Edition"],
+                "GR86": ["Base", "Premium", "Trueno Edition"]
+            },
+            "Volkswagen": {
+                "Jetta": ["S", "Sport", "SE", "SEL"],
+                "Passat": ["S", "SE", "R-Line"],
+                "Taos": ["S", "SE", "SEL"],
+                "Tiguan": ["S", "SE", "SE R-Line Black", "SEL R-Line"],
+                "Atlas": ["SE", "SE w/ Technology", "SEL", "SEL R-Line", "SEL Premium R-Line"],
+                "ID.4": ["Standard", "Pro", "Pro S", "AWD Pro", "AWD Pro S"]
+            },
+            "Volvo": {
+                "S60 Sedan": ["Core", "Plus", "Ultimate"],
+                "S90 Sedan": ["Plus", "Ultimate"],
+                "V60 Cross Country": ["Plus", "Ultimate"],
+                "V90 Cross Country": ["Plus", "Ultimate"],
+                "XC40 SUV": ["Core", "Plus", "Ultimate"],
+                "XC60 SUV": ["Core", "Plus", "Ultimate"],
+                "XC90 SUV": ["Core", "Plus", "Ultimate"],
+                "C40 Recharge": ["Core", "Plus", "Ultimate"],
+                "EX30 EV": ["Core", "Plus", "Ultra"]
+            }
+        };
+
+
+        // Get dropdown elements
+        const carMakeSelect = document.getElementById('carMake');
+        const carModelSelect = document.getElementById('carModel');
+        const carTrimSelect = document.getElementById('carTrim');
+        const carDriveSelect = document.getElementById('carDrive');
+
+        // Get selling price related elements
+        const sellingPriceInput = document.getElementById('sellingPrice');
+        const discountPercentageInput = document.getElementById('discountPercentage');
+        const discountPercentageValueSpan = document.getElementById('discountPercentageValue');
+        const discountAmountValueSpan = document.getElementById('discountAmountValue');
+        const msrpInput = document.getElementById('msrp');
+
+        // Get other input elements
+        const taxedIncentivesInput = document.getElementById('taxedIncentives');
+        const untaxedIncentivesInput = document.getElementById('untaxedIncentives');
+        const downPaymentInput = document.getElementById('downPayment');
+        const tradeInEquityInput = document.getElementById('tradeInEquity');
+        const residualValueInput = document.getElementById('residualValue');
+        const estimatedResidualDisplay = document.getElementById('estimatedResidualDisplay');
+        const moneyFactorInput = document.getElementById('moneyFactor');
+        const leaseTermSelect = document.getElementById('leaseTerm');
+        const mileageSelect = document.getElementById('mileage');
+        const taxRateInput = document.getElementById('taxRate');
+
+        const acquisitionFeeInput = document.getElementById('acquisitionFee');
+        const docFeeInput = document.getElementById('docFee');
+        const licenseRegFeesInput = document.getElementById('licenseRegFees');
+        const msdsInput = document.getElementById('msds');
+        const dispositionFeeInput = document.getElementById('dispositionFee');
+        const zeroDriveOffCheckbox = document.getElementById('zeroDriveOffCheckbox');
+        const notesField = document.getElementById('notesField');
+
+        // Checkbox elements for individual fee capitalization
+        const acqFeePaidUpfrontCheckbox = document.getElementById('acqFeePaidUpfrontCheckbox');
+        const docFeePaidUpfrontCheckbox = document.getElementById('docFeePaidUpfrontCheckbox');
+        const licRegPaidUpfrontCheckbox = document.getElementById('licRegPaidUpfrontCheckbox');
+
+
+        // Due at Signing breakdown elements
+        const dueAtSigningDisplay = document.getElementById('dueAtSigningDisplay');
+        const dueAtSigningDetails = document.getElementById('dueAtSigningDetails');
+        const detailFirstMonth = document.getElementById('detailFirstMonth');
+        const detailDownPayment = document.getElementById('detailDownPayment');
+        const downPaymentLine = document.getElementById('downPaymentLine');
+        const detailUpfrontFees = document.getElementById('detailUpfrontFees');
+        const upfrontFeesLine = document.getElementById('upfrontFeesLine');
+        const detailMsdsAmount = document.getElementById('detailMsdsAmount');
+        const msdsLine = document.getElementById('msdsLine');
+        const detailTotalUpfrontTaxes = document.getElementById('detailTotalUpfrontTaxes');
+
+        // Monthly Payment Breakdown elements
+        const monthlyPaymentBreakdownShort = document.getElementById('monthlyPaymentBreakdownShort');
+        const monthlyPaymentDetails = document.getElementById('monthlyPaymentDetails');
+        const detailDepreciation = document.getElementById('detailDepreciation');
+        const detailRentCharge = document.getElementById('detailRentCharge');
+        const detailMonthlyTax = document.getElementById('detailMonthlyTax');
+
+        // Total Cost of Ownership elements
+        const totalCostOfOwnershipDisplay = document.getElementById('totalCostOfOwnershipDisplay');
+        const totalCostOfOwnershipDetails = document.getElementById('totalCostOfOwnershipDetails');
+        const detailTCODepreciation = document.getElementById('detailTCODepreciation');
+        const detailTCORentCharge = document.getElementById('detailTCORentCharge');
+        const detailTCOTaxes = document.getElementById('detailTCOTaxes');
+        const detailTCONonCapitalizedPayments = document.getElementById('detailTCONonCapitalizedPayments');
+
+        // Scenario label inputs and buttons for new save/load logic
+        const newScenarioLabelInput = document.getElementById('newScenarioLabelInput');
+        const scenario1LoadBtn = document.getElementById('scenario1LoadBtn');
+        const scenario2LoadBtn = document.getElementById('scenario2LoadBtn');
+        const scenario3LoadBtn = document.getElementById('scenario3LoadBtn');
+
+
+        const MSD_REDUCTION_PER_MSD = 0.00007; // Common money factor reduction per MSD
+        let lastSavedScenarioSlot = 0; // To cycle through slots when saving
+
+        /**
+         * Helper function to display messages to the user (errors or info).
+         */
+        function displayMessage(message, isError) {
+            const errorMessageElement = document.getElementById('error-message');
+            errorMessageElement.innerText = message;
+            if (isError) {
+                errorMessageElement.classList.remove('hidden');
+                errorMessageElement.classList.add('text-red-500');
+            } else {
+                errorMessageElement.classList.add('hidden');
+            }
+        }
+
+        /**
+         * Rounds the value of the input field to the nearest integer and then calls calculateLease.
+         * This ensures that fields like MSRP, Selling Price, etc., appear as whole numbers.
+         * @param {HTMLInputElement} inputElement - The input element to round and process.
+         */
+        function roundAndCalculate(inputElement) {
+            if (inputElement && inputElement.value !== '') {
+                inputElement.value = Math.round(parseFloat(inputElement.value)).toFixed(0);
+            }
+            calculateLease();
+        }
+
+        /**
+         * Toggles the visibility of the detailed monthly payment breakdown.
+         */
+        function toggleMonthlyBreakdownDetails() {
+            monthlyPaymentDetails.classList.toggle('hidden');
+        }
+
+        /**
+         * Toggles the visibility of the Total Cost of Ownership breakdown.
+         */
+        function toggleTotalCostOfOwnershipDetails() {
+            totalCostOfOwnershipDetails.classList.toggle('hidden');
+        }
+
+        /**
+         * Resets all calculator inputs to their initial default values.
+         */
+        function resetCalculator() {
+            // Reset dropdowns
+            carMakeSelect.value = "";
+            populateModels(); // This will cascade reset model, trim, drive
+
+            // Reset numerical inputs to their original default values
+            msrpInput.value = "40000";
+            sellingPriceInput.value = "37000";
+            discountPercentageInput.value = "7.50";
+            // Update both percentage and amount on reset
+            const defaultMsrp = parseFloat(msrpInput.value);
+            const defaultSellingPrice = parseFloat(sellingPriceInput.value);
+            const defaultDiscountAmount = defaultMsrp - defaultSellingPrice;
+            discountPercentageValueSpan.textContent = "7.50%";
+            discountAmountValueSpan.textContent = `($${Math.round(defaultDiscountAmount).toFixed(0)} Discount)`;
+
+
+            taxedIncentivesInput.value = "1000";
+            untaxedIncentivesInput.value = "0";
+            downPaymentInput.value = "0";
+            tradeInEquityInput.value = "0";
+            residualValueInput.value = "55";
+            moneyFactorInput.value = "0.00135";
+            leaseTermSelect.value = "24";
+            mileageSelect.value = "10000";
+            taxRateInput.value = "8.75";
+
+            // Reset fee fields to blank or default
+            acquisitionFeeInput.value = "";
+            docFeeInput.value = "85";
+            licenseRegFeesInput.value = "";
+            msdsInput.value = "0";
+            dispositionFeeInput.value = "";
+            notesField.value = ""; // Clear notes field
+            newScenarioLabelInput.value = ""; // Clear the new scenario label input
+            newScenarioLabelInput.placeholder = "Enter name for this scenario"; // Reset placeholder
+
+            // Set default checkbox states
+            zeroDriveOffCheckbox.checked = false;
+            acqFeePaidUpfrontCheckbox.checked = false;
+            docFeePaidUpfrontCheckbox.checked = true;
+            licRegPaidUpfrontCheckbox.checked = true;
+
+
+            // Hide all breakdowns
+            dueAtSigningDetails.classList.add('hidden');
+            monthlyPaymentDetails.classList.add('hidden');
+            totalCostOfOwnershipDetails.classList.add('hidden');
+
+
+            calculateLease(); // Recalculate with reset values
+            displayMessage("", false); // Clear any error messages
+        }
+
+
+        /**
+         * Populates the 'Make' dropdown with available car manufacturers.
+         * Called once on page load.
+         */
+        function populateMakes() {
+            carMakeSelect.innerHTML = '<option value="">Select Make</option>';
+            carModelSelect.innerHTML = '<option value="">Select Model</option>';
+            carTrimSelect.innerHTML = '<option value="">Select Trim</option>';
+            carDriveSelect.innerHTML = '<option value="">Select Drive</option>';
+            carModelSelect.disabled = true;
+            carTrimSelect.disabled = true;
+            carDriveSelect.disabled = true;
+
+            for (const make in carData) {
+                const option = document.createElement('option');
+                option.value = make;
+                option.textContent = make;
+                carMakeSelect.appendChild(option);
+            }
+        }
+
+        /**
+         * Populates the 'Model' dropdown based on the selected 'Make'.
+         * Called when the 'Make' selection changes.
+         */
+        function populateModels() {
+            const selectedMake = carMakeSelect.value;
+            carModelSelect.innerHTML = '<option value="">Select Model</option>';
+            carTrimSelect.innerHTML = '<option value="">Select Trim</option>';
+            carDriveSelect.innerHTML = '<option value="">Select Drive</option>';
+            carTrimSelect.disabled = true;
+            carDriveSelect.disabled = true;
+
+            if (selectedMake && carData[selectedMake]) {
+                const models = carData[selectedMake];
+                for (const model in models) {
+                    const option = document.createElement('option');
+                    option.value = model;
+                    option.textContent = model;
+                    carModelSelect.appendChild(option);
+                }
+                carModelSelect.disabled = false;
+            } else {
+                carModelSelect.disabled = true;
+            }
+            calculateLease();
+        }
+
+        /**
+         * Populates the 'Trim' dropdown based on the selected 'Make' and 'Model'.
+         * Called when the 'Model' selection changes.
+         */
+        function populateTrims() {
+            const selectedMake = carMakeSelect.value;
+            const selectedModel = carModelSelect.value;
+            carTrimSelect.innerHTML = '<option value="">Select Trim</option>';
+            carDriveSelect.innerHTML = '<option value="">Select Drive</option>';
+            carDriveSelect.disabled = true;
+
+            if (selectedMake && selectedModel && carData[selectedMake][selectedModel]) {
+                const trims = carData[selectedMake][selectedModel];
+                trims.forEach(trim => {
+                    const option = document.createElement('option');
+                    option.value = trim;
+                    option.textContent = trim;
+                    carTrimSelect.appendChild(option);
+                });
+                carTrimSelect.disabled = false;
+            } else {
+                carTrimSelect.disabled = true;
+            }
+            populateDriveTypes(); // Populate drive types after trim is populated
+            calculateLease();
+        }
+
+        /**
+         * Populates the 'Drive' dropdown with FWD, RWD, AWD options.
+         * Called when the 'Trim' selection changes.
+         */
+        function populateDriveTypes() {
+            carDriveSelect.innerHTML = '<option value="">Select Drive</option>';
+            const driveTypes = ["FWD", "RWD", "AWD"];
+
+            if (carTrimSelect.value !== '') {
+                driveTypes.forEach(drive => {
+                    const option = document.createElement('option');
+                    option.value = drive;
+                    option.textContent = drive;
+                    carDriveSelect.appendChild(option);
+                });
+                carDriveSelect.disabled = false;
+            } else {
+                carDriveSelect.disabled = true;
+            }
+            calculateLease();
+        }
+
+        /**
+         * Updates the Selling Price based on MSRP and the Discount Percentage (from slider).
+         * Triggered when discountPercentage or MSRP changes.
+         */
+        function updateSellingPriceFromPercentage() {
+            const msrp = parseFloat(msrpInput.value) || 0;
+            const discountPercentage = parseFloat(discountPercentageInput.value) || 0;
+
+            discountPercentageValueSpan.textContent = discountPercentage.toFixed(2) + '%';
+
+            if (msrp > 0) {
+                const calculatedSellingPrice = msrp * (1 - (discountPercentage / 100));
+                sellingPriceInput.value = Math.round(calculatedSellingPrice).toFixed(0);
+                const discountAmount = msrp - calculatedSellingPrice;
+                discountAmountValueSpan.textContent = `($${Math.round(discountAmount).toFixed(0)} Discount)`;
+            } else {
+                sellingPriceInput.value = '0';
+                discountAmountValueSpan.textContent = '($0 Discount)';
+            }
+            calculateLease();
+        }
+
+        /**
+         * Updates the Discount Percentage (slider and span) based on Selling Price and MSRP.
+         * Triggered when sellingPrice or MSRP changes.
+         */
+        function updateDiscountPercentageFromSellingPrice() {
+            const msrp = parseFloat(msrpInput.value) || 0;
+            const sellingPrice = parseFloat(sellingPriceInput.value) || 0;
+
+            if (msrp > 0) {
+                const calculatedDiscountPercentage = ((msrp - sellingPrice) / msrp) * 100;
+                // Clamp the percentage to the slider's min/max range
+                const clampedPercentage = Math.max(0, Math.min(30, calculatedDiscountPercentage));
+                discountPercentageInput.value = clampedPercentage.toFixed(2);
+                discountPercentageValueSpan.textContent = clampedPercentage.toFixed(2) + '%';
+
+                const discountAmount = msrp - sellingPrice;
+                discountAmountValueSpan.textContent = `($${Math.round(discountAmount).toFixed(0)} Discount)`;
+
+            } else {
+                discountPercentageInput.value = 0;
+                discountPercentageValueSpan.textContent = '0.00%';
+                discountAmountValueSpan.textContent = '($0 Discount)';
+            }
+            calculateLease();
+        }
+
+
+        /**
+         * Toggles the visibility of the Due at Signing breakdown.
+         */
+        function toggleDueAtSigningDetails() {
+            dueAtSigningDetails.classList.toggle('hidden');
+        }
+
+        /**
+         * Performs the main lease calculation based on current input values.
+         * Triggered on every input change.
+         */
+        function calculateLease() {
+            try {
+                // Get all raw input values. Use || 0 to default empty/invalid fields to 0.
+                const msrp = parseFloat(msrpInput.value) || 0;
+                const sellingPrice = parseFloat(sellingPriceInput.value) || 0;
+                const untaxedIncentives = parseFloat(untaxedIncentivesInput.value) || 0;
+                const taxedIncentives = parseFloat(taxedIncentivesInput.value) || 0;
+
+                const rawDownPayment = parseFloat(downPaymentInput.value) || 0;
+                const rawAcquisitionFee = parseFloat(acquisitionFeeInput.value) || 0;
+                const rawDocFee = parseFloat(docFeeInput.value) || 0;
+                const rawLicenseRegFees = parseFloat(licenseRegFeesInput.value) || 0;
+                const rawMsds = parseInt(msdsInput.value) || 0;
+
+                const tradeInEquity = parseFloat(tradeInEquityInput.value) || 0;
+                const residualValuePercent = parseFloat(residualValueInput.value) / 100 || 0;
+                const rawMoneyFactor = parseFloat(moneyFactorInput.value) || 0;
+                const leaseTerm = parseFloat(leaseTermSelect.value) || 0;
+                const mileage = parseFloat(mileageSelect.value) || 0;
+                const taxRate = parseFloat(taxRateInput.value) / 100 || 0;
+                const dispositionFee = parseFloat(dispositionFeeInput.value) || 0;
+
+                // --- Input validation and required field styling ---
+                const requiredInputs = [
+                    { element: msrpInput, value: msrp },
+                    { element: sellingPriceInput, value: sellingPrice },
+                    { element: residualValueInput, value: residualValuePercent },
+                    { element: moneyFactorInput, value: rawMoneyFactor },
+                    { element: leaseTermSelect, value: leaseTerm }
+                ];
+
+                let hasError = false;
+                requiredInputs.forEach(item => {
+                    // Check if value is zero, negative or NaN (from empty string or invalid input)
+                    if (item.value <= 0 || isNaN(item.value)) {
+                        item.element.classList.add('required-field-error');
+                        hasError = true;
+                    } else {
+                        item.element.classList.remove('required-field-error');
+                    }
+                });
+
+                if (hasError) {
+                    displayMessage("MSRP, Selling Price, Residual Value, Money Factor, and Lease Term must be valid positive numbers.", true);
+                    document.getElementById('monthlyPayment').innerText = '$0';
+                    dueAtSigningDisplay.innerText = '$0';
+                    totalCostOfOwnershipDisplay.innerText = '$0';
+                    document.getElementById('effectiveMonthlyCost').innerText = '$0';
+                    document.getElementById('estimatedApr').innerText = '0.00%';
+                    estimatedResidualDisplay.innerText = '$0';
+                    monthlyPaymentBreakdownShort.innerText = 'N/A';
+                    // Clear breakdown if there's an error
+                    detailFirstMonth.innerText = '$0';
+                    detailDownPayment.innerText = '$0';
+                    downPaymentLine.style.display = 'none';
+                    detailUpfrontFees.innerText = '$0';
+                    upfrontFeesLine.style.display = 'none';
+                    detailMsdsAmount.innerText = '$0';
+                    msdsLine.style.display = 'none';
+                    detailTotalUpfrontTaxes.innerText = '$0';
+                    detailDepreciation.innerText = '$0';
+                    detailRentCharge.innerText = '$0';
+                    detailMonthlyTax.innerText = '$0';
+                    detailTCODepreciation.innerText = '$0';
+                    detailTCORentCharge.innerText = '$0';
+                    detailTCOTaxes.innerText = '$0';
+                    detailTCONonCapitalizedPayments.innerText = '$0';
+                    return;
+                }
+                displayMessage("", false); // Clear any previous error messages if validation passes
+
+
+                // --- Calculate Money Factor and APR ---
+                let effectiveMoneyFactor = rawMoneyFactor;
+                effectiveMoneyFactor = Math.max(0, rawMoneyFactor - (rawMsds * MSD_REDUCTION_PER_MSD));
+                const estimatedApr = effectiveMoneyFactor * 2400;
+                document.getElementById('estimatedApr').innerText = estimatedApr.toFixed(2) + '%';
+
+
+                // --- Core Lease Calculation ---
+                const residualValueDollars = msrp * residualValuePercent;
+                estimatedResidualDisplay.innerText = '$' + Math.round(residualValueDollars).toFixed(0);
+
+                // Calculate total security deposit cash (for display and capitalization if ZDO)
+                let msdCashValue = rawMsds * (Math.round(msrp * 0.01));
+
+                // Initialize adjustedCapCost with initial values
+                let currentAdjustedCapCost = sellingPrice - untaxedIncentives - taxedIncentives - tradeInEquity;
+
+                // Breakdown display variables (will hold actual dollar values for display)
+                let displayFirstMonthPayment = 0;
+                let displayDownPayment = 0;
+                let displayAcquisitionFeeUpfront = 0;
+                let displayDocFeeUpfront = 0;
+                let displayLicenseRegFeesUpfront = 0;
+                let displayMsdsAmount = 0;
+                let displayTotalUpfrontTaxes = 0;
+                let displayCombinedUpfrontFees = 0; // For Due at Signing breakdown
+
+                // --- Handle Zero Drive Off Toggle FIRST, as it overrides individual checkboxes ---
+                if (zeroDriveOffCheckbox.checked) {
+                    // If ZDO, all these amounts are capitalized, and Due at Signing is $0
+                    currentAdjustedCapCost += rawDownPayment + rawAcquisitionFee + rawDocFee + rawLicenseRegFees + msdCashValue;
+                    currentAdjustedCapCost += (taxedIncentives * taxRate); // Tax on incentives capitalized
+
+                    // For ZDO, the *entire* first month's payment (including its tax) is capitalized
+                    // To calculate its tax, we first need temp pre-tax and tax components
+                    const tempDepreciationForZDO = (currentAdjustedCapCost - residualValueDollars) / leaseTerm;
+                    const tempRentChargeForZDO = (currentAdjustedCapCost + residualValueDollars) * effectiveMoneyFactor;
+                    const tempPreTaxMonthlyForZDO = tempDepreciationForZDO + tempRentChargeForZDO;
+                    const tempTaxOnFirstMonthForZDO = tempPreTaxMonthlyForZDO * taxRate;
+                    currentAdjustedCapCost += tempTaxOnFirstMonthForZDO; // Capitalize first month's tax
+
+                    // Tax on upfront fees that are capitalized by ZDO
+                    currentAdjustedCapCost += (rawAcquisitionFee * taxRate);
+                    currentAdjustedCapCost += (rawDocFee * taxRate);
+                    // No tax on rawLicenseRegFees per previous user clarification
+
+                    // All breakdown items are $0 cash out of pocket for ZDO
+                    displayDownPayment = 0;
+                    displayAcquisitionFeeUpfront = 0;
+                    displayDocFeeUpfront = 0;
+                    displayLicenseRegFeesUpfront = 0;
+                    displayMsdsAmount = 0;
+                    displayFirstMonthPayment = 0;
+                    displayTotalUpfrontTaxes = 0;
+                    displayCombinedUpfrontFees = 0;
+
+                } else {
+                    // --- If not Zero Drive Off, handle individual fee checkboxes and down payment ---
+
+                    // Down Payment: reduces capitalized cost and is part of Due at Signing
+                    currentAdjustedCapCost -= rawDownPayment;
+                    displayDownPayment = rawDownPayment;
+                    // Add tax on down payment to upfront taxes for display
+                    displayTotalUpfrontTaxes += rawDownPayment * taxRate;
+
+                    // Acquisition Fee
+                    if (acqFeePaidUpfrontCheckbox.checked) {
+                        displayAcquisitionFeeUpfront = rawAcquisitionFee;
+                        displayTotalUpfrontTaxes += rawAcquisitionFee * taxRate;
+                    } else { // Default: capitalize
+                        currentAdjustedCapCost += rawAcquisitionFee;
+                    }
+
+                    // Doc Fee
+                    if (docFeePaidUpfrontCheckbox.checked) {
+                        displayDocFeeUpfront = rawDocFee;
+                        displayTotalUpfrontTaxes += rawDocFee * taxRate;
+                    } else { // Default: capitalize
+                        currentAdjustedCapCost += rawDocFee;
+                    }
+
+                    // License & Registration Fees (NO TAX on this one, as per user request)
+                    if (licRegPaidUpfrontCheckbox.checked) {
+                        displayLicenseRegFeesUpfront = rawLicenseRegFees;
+                    } else { // Default: capitalize
+                        currentAdjustedCapCost += rawLicenseRegFees;
+                    }
+
+                    // MSDs are always due upfront if not capitalized by ZDO
+                    displayMsdsAmount = msdCashValue;
+
+                    // Upfront Tax on Taxed Incentives (when ZDO is off)
+                    displayTotalUpfrontTaxes += taxedIncentives * taxRate;
+
+                    // Combine all upfront fees for display in breakdown (excluding taxes)
+                    displayCombinedUpfrontFees = displayAcquisitionFeeUpfront + displayDocFeeUpfront + displayLicenseRegFeesUpfront;
+                }
+
+                // Recalculate monthly payment based on FINAL adjustedCapCost
+                const finalDepreciationPortion = (currentAdjustedCapCost - residualValueDollars) / leaseTerm;
+                const finalRentChargePortion = (currentAdjustedCapCost + residualValueDollars) * effectiveMoneyFactor;
+
+                const preTaxMonthlyPayment = finalDepreciationPortion + finalRentChargePortion;
+                const salesTaxOnBasePayment = preTaxMonthlyPayment * taxRate;
+
+                // Monthly tax on taxed incentives only applies if ZDO is checked and taxed incentives are capitalized
+                let taxOnTaxedIncentivesPerMonth = 0;
+                if (zeroDriveOffCheckbox.checked) {
+                    taxOnTaxedIncentivesPerMonth = (taxedIncentives * taxRate) / leaseTerm;
+                }
+
+                // Total calculated monthly payment including all monthly taxes
+                let calculatedMonthlyPayment = preTaxMonthlyPayment + salesTaxOnBasePayment + taxOnTaxedIncentivesPerMonth;
+
+
+                // Final determination of what first month payment looks like for display in Due at Signing.
+                if (!zeroDriveOffCheckbox.checked) {
+                    displayFirstMonthPayment = calculatedMonthlyPayment;
+                } else {
+                    // If ZDO is checked, the first month's payment is capitalized, so it's not "due at signing" as cash.
+                    // However, we still need to calculate the actual monthly payment value for the main display.
+                    // The calculatedMonthlyPayment already accounts for capitalized items being spread out.
+                    // So, displayFirstMonthPayment (for the Due at Signing breakdown) remains 0 for ZDO.
+                }
+
+
+                // Calculate Total Due at Signing (actual cash out of pocket)
+                let totalCashDueAtSigning;
+                if (zeroDriveOffCheckbox.checked) {
+                    totalCashDueAtSigning = 0; // True zero drive off means $0 cash out of pocket
+                } else {
+                    // For standard lease, it's the sum of:
+                    // 1. First month's payment (includes its tax)
+                    // 2. Down Payment
+                    // 3. Paid Upfront Fees (Acquisition, Doc, Lic & Reg)
+                    // 4. MSDs
+                    // 5. Total Upfront Taxes (Tax on Acq, Tax on Doc, Tax on Incentives, Tax on Down Payment)
+                    totalCashDueAtSigning = displayFirstMonthPayment + displayDownPayment +
+                                           displayCombinedUpfrontFees +
+                                           displayMsdsAmount + displayTotalUpfrontTaxes;
+                }
+
+                // --- Calculate components for new Total Cost of Ownership (TCO) breakdown ---
+                const totalTCODepreciation = finalDepreciationPortion * leaseTerm;
+                const totalTCORentCharge = finalRentChargePortion * leaseTerm;
+
+                let totalTCOTaxes = salesTaxOnBasePayment * leaseTerm; // Total tax on regular monthly payments
+                totalTCOTaxes += taxedIncentives * taxRate; // Total tax on taxed incentives
+                
+                // Add tax on down payment if applicable (part of total tax cost)
+                totalTCOTaxes += rawDownPayment * taxRate;
+
+                // Add tax on acquisition and doc fees if paid upfront (otherwise their tax is part of monthly tax already)
+                if (acqFeePaidUpfrontCheckbox.checked) {
+                    totalTCOTaxes += rawAcquisitionFee * taxRate;
+                }
+                if (docFeePaidUpfrontCheckbox.checked) {
+                    totalTCOTaxes += rawDocFee * taxRate;
+                }
+                // License & Reg fees have no tax per user notes.
+
+                let totalTCONonCapitalizedPayments = dispositionFee; // Disposition fee is always non-capitalized
+
+                // Add other upfront fees/payments if they are not capitalized (i.e., paid upfront)
+                if (!zeroDriveOffCheckbox.checked) { // Only consider if not ZDO
+                    totalTCONonCapitalizedPayments += rawDownPayment; // Down payment is a non-capitalized cash payment
+                    if (acqFeePaidUpfrontCheckbox.checked) {
+                        totalTCONonCapitalizedPayments += rawAcquisitionFee;
+                    }
+                    if (docFeePaidUpfrontCheckbox.checked) {
+                        totalTCONonCapitalizedPayments += rawDocFee;
+                    }
+                    if (licRegPaidUpfrontCheckbox.checked) {
+                        totalTCONonCapitalizedPayments += rawLicenseRegFees;
+                    }
+                }
+                // MSDs are not a cost, so they are excluded from TCO.
+
+                // Calculate the final Total Cost of Ownership based on the sum of its new breakdown components
+                const totalCostOfOwnership = totalTCODepreciation + totalTCORentCharge + totalTCOTaxes + totalTCONonCapitalizedPayments;
+
+
+                // --- Calculate Effective Monthly Cost ---
+                const effectiveMonthlyCost = leaseTerm > 0 ? totalCostOfOwnership / leaseTerm : 0;
+
+
+                // --- Update UI ---
+                const roundedMonthlyPayment = Math.round(calculatedMonthlyPayment);
+                const roundedTotalCashDueAtSigning = Math.round(totalCashDueAtSigning);
+                const roundedTotalCostOfOwnership = Math.round(totalCostOfOwnership);
+                const roundedEffectiveMonthlyCost = Math.round(effectiveMonthlyCost);
+
+                document.getElementById('monthlyPayment').innerText = '$' + roundedMonthlyPayment.toFixed(0);
+                dueAtSigningDisplay.innerText = '$' + roundedTotalCashDueAtSigning.toFixed(0);
+                totalCostOfOwnershipDisplay.innerText = '$' + roundedTotalCostOfOwnership.toFixed(0);
+                document.getElementById('effectiveMonthlyCost').innerText = '$' + roundedEffectiveMonthlyCost.toFixed(0);
+
+                // Update Monthly Payment Breakdown (short version)
+                const totalMonthlyTaxForShortBreakdown = salesTaxOnBasePayment + taxOnTaxedIncentivesPerMonth;
+                monthlyPaymentBreakdownShort.innerText = `$${Math.round(preTaxMonthlyPayment).toFixed(0)} (Pre-tax) + $${Math.round(totalMonthlyTaxForShortBreakdown).toFixed(0)} (Tax)`;
+
+                // Update Monthly Payment Detailed Breakdown (hidden by default)
+                detailDepreciation.innerText = '$' + Math.round(finalDepreciationPortion).toFixed(0);
+                detailRentCharge.innerText = '$' + Math.round(finalRentChargePortion).toFixed(0);
+                detailMonthlyTax.innerText = '$' + Math.round(totalMonthlyTaxForShortBreakdown).toFixed(0);
+
+
+                // Update Due at Signing Breakdown details
+                detailFirstMonth.innerText = '$' + roundedMonthlyPayment.toFixed(0); // Ensure this matches the main monthly payment
+                
+                // Down Payment: Only show if > 0
+                if (displayDownPayment > 0) {
+                    downPaymentLine.style.display = 'block';
+                    detailDownPayment.innerText = '$' + Math.round(displayDownPayment).toFixed(0);
+                } else {
+                    downPaymentLine.style.display = 'none';
+                }
+
+                // Upfront Fees: Only show if > 0
+                if (displayCombinedUpfrontFees > 0) {
+                    upfrontFeesLine.style.display = 'block';
+                    detailUpfrontFees.innerText = '$' + Math.round(displayCombinedUpfrontFees).toFixed(0);
+                } else {
+                    upfrontFeesLine.style.display = 'none';
+                }
+
+                // MSDs: Only show if > 0
+                if (displayMsdsAmount > 0) {
+                    msdsLine.style.display = 'block';
+                    detailMsdsAmount.innerText = '$' + Math.round(displayMsdsAmount).toFixed(0);
+                } else {
+                    msdsLine.style.display = 'none';
+                }
+                
+                detailTotalUpfrontTaxes.innerText = '$' + Math.round(displayTotalUpfrontTaxes).toFixed(0);
+
+
+                // Update Total Cost of Ownership Detailed Breakdown (new categories)
+                detailTCODepreciation.innerText = '$' + Math.round(totalTCODepreciation).toFixed(0);
+                detailTCORentCharge.innerText = '$' + Math.round(totalTCORentCharge).toFixed(0);
+                detailTCOTaxes.innerText = '$' + Math.round(totalTCOTaxes).toFixed(0);
+                detailTCONonCapitalizedPayments.innerText = '$' + Math.round(totalTCONonCapitalizedPayments).toFixed(0);
+
+
+            } catch (error) {
+                console.error("Calculation Error:", error);
+                displayMessage("An unexpected error occurred. Please check your inputs.", true);
+                document.getElementById('monthlyPayment').innerText = '$0';
+                dueAtSigningDisplay.innerText = '$0';
+                totalCostOfOwnershipDisplay.innerText = '$0';
+                document.getElementById('effectiveMonthlyCost').innerText = '$0';
+                document.getElementById('estimatedApr').innerText = '0.00%';
+                estimatedResidualDisplay.innerText = '$0';
+                monthlyPaymentBreakdownShort.innerText = 'N/A';
+
+                // Clear breakdown on error
+                detailFirstMonth.innerText = '$0';
+                detailDownPayment.innerText = '$0';
+                downPaymentLine.style.display = 'none';
+                detailUpfrontFees.innerText = '$0';
+                upfrontFeesLine.style.display = 'none';
+                detailMsdsAmount.innerText = '$0';
+                msdsLine.style.display = 'none';
+                detailTotalUpfrontTaxes.innerText = '$0';
+                detailDepreciation.innerText = '$0';
+                detailRentCharge.innerText = '$0';
+                detailMonthlyTax.innerText = '$0';
+                detailTCODepreciation.innerText = '$0';
+                detailTCORentCharge.innerText = '$0';
+                detailTCOTaxes.innerText = '$0';
+                detailTCONonCapitalizedPayments.innerText = '$0';
+
+
+                // Ensure required fields show error if they triggered it
+                const msrp = parseFloat(msrpInput.value) || 0;
+                const sellingPrice = parseFloat(sellingPriceInput.value) || 0;
+                const residualValuePercent = parseFloat(residualValueInput.value) / 100 || 0;
+                const rawMoneyFactor = parseFloat(moneyFactorInput.value) || 0;
+                const leaseTerm = parseFloat(leaseTermSelect.value) || 0;
+
+                [
+                    { element: msrpInput, value: msrp },
+                    { element: sellingPriceInput, value: sellingPrice },
+                    { element: residualValueInput, value: residualValuePercent },
+                    { element: moneyFactorInput, value: rawMoneyFactor },
+                    { element: leaseTermSelect, value: leaseTerm }
+                ].forEach(item => {
+                    if (item.value <= 0 || isNaN(item.value)) {
+                        item.element.classList.add('required-field-error');
+                    }
+                });
+            }
+        }
+
+        /**
+         * Saves the current calculator state to a specified scenario slot in local storage.
+         * @param {number} scenarioNum - The scenario number (1, 2, or 3) to save to.
+         * @param {string} scenarioLabel - The label for this scenario.
+         */
+        function saveScenarioToSlot(scenarioNum, scenarioLabel) {
+            const scenarioData = {
+                // Save input values to restore scenario accurately
+                msrp: msrpInput.value,
+                sellingPrice: sellingPriceInput.value,
+                discountPercentage: discountPercentageInput.value,
+                taxedIncentives: taxedIncentivesInput.value,
+                untaxedIncentives: untaxedIncentivesInput.value,
+                downPayment: downPaymentInput.value,
+                tradeInEquity: tradeInEquityInput.value,
+                residualValue: residualValueInput.value,
+                moneyFactor: moneyFactorInput.value,
+                leaseTerm: leaseTermSelect.value,
+                mileage: mileageSelect.value,
+                taxRate: taxRateInput.value,
+                acquisitionFee: acquisitionFeeInput.value,
+                docFee: docFeeInput.value,
+                licenseRegFees: licenseRegFeesInput.value,
+                msds: msdsInput.value,
+                dispositionFee: dispositionFeeInput.value,
+                zeroDriveOff: zeroDriveOffCheckbox.checked,
+                acqFeePaidUpfront: acqFeePaidUpfrontCheckbox.checked,
+                docFeePaidUpfront: docFeePaidUpfrontCheckbox.checked,
+                licRegPaidUpfront: licRegPaidUpfrontCheckbox.checked,
+                carMake: carMakeSelect.value,
+                carModel: carModelSelect.value,
+                carTrim: carTrimSelect.value,
+                carDrive: carDriveSelect.value,
+                label: scenarioLabel // Use the provided label
+            };
+            localStorage.setItem(`leaseScenario${scenarioNum}`, JSON.stringify(scenarioData));
+        }
+
+        /**
+         * Determines the next available slot or cycles through slots, then saves the current scenario.
+         */
+        function saveCurrentScenario() {
+            try {
+                const newScenarioLabel = newScenarioLabelInput.value.trim();
+
+                if (!newScenarioLabel) {
+                    displayMessage("Please enter a label for the scenario before saving.", true);
+                    return;
+                }
+
+                let targetSlot = -1;
+                // Try to find the next available empty slot
+                for (let i = 1; i <= 3; i++) {
+                    if (!localStorage.getItem(`leaseScenario${i}`)) {
+                        targetSlot = i;
+                        break;
+                    }
+                }
+
+                // If all slots are full, cycle to the next one from the last saved
+                if (targetSlot === -1) {
+                    lastSavedScenarioSlot = (lastSavedScenarioSlot % 3) + 1; // Cycle 1 -> 2 -> 3 -> 1
+                    targetSlot = lastSavedScenarioSlot;
+                }
+
+                // Call the existing saveScenarioToSlot function with the determined slot and new label
+                saveScenarioToSlot(targetSlot, newScenarioLabel); 
+
+                newScenarioLabelInput.value = ""; // Clear the input after saving
+                newScenarioLabelInput.placeholder = "Enter name for this scenario"; // Reset placeholder
+                displayMessage(`Scenario "${newScenarioLabel}" saved to Slot ${targetSlot}!`, false);
+                loadScenarioLabels(); // Update the buttons immediately
+            } catch (e) {
+                console.error("Failed to save current scenario:", e);
+                displayMessage("Failed to save scenario. An error occurred.", true);
+            }
+        }
+
+
+        /**
+         * Loads a saved scenario into the calculator inputs and recalculates.
+         * @param {number} scenarioNum - The scenario number (1, 2, or 3).
+         */
+        function loadScenario(scenarioNum) {
+            try {
+                const savedData = localStorage.getItem(`leaseScenario${scenarioNum}`);
+                if (savedData) {
+                    const scenarioData = JSON.parse(savedData);
+
+                    // Restore inputs
+                    msrpInput.value = scenarioData.msrp || "";
+                    sellingPriceInput.value = scenarioData.sellingPrice || "";
+                    discountPercentageInput.value = scenarioData.discountPercentage || 0;
+                    // Update both percentage and amount on load
+                    discountPercentageValueSpan.textContent = (parseFloat(scenarioData.discountPercentage) || 0).toFixed(2) + '%';
+                    const loadedMsrp = parseFloat(scenarioData.msrp) || 0;
+                    const loadedSellingPrice = parseFloat(scenarioData.sellingPrice) || 0;
+                    const loadedDiscountAmount = loadedMsrp - loadedSellingPrice;
+                    discountAmountValueSpan.textContent = `($${Math.round(loadedDiscountAmount).toFixed(0)} Discount)`;
+
+
+                    taxedIncentivesInput.value = scenarioData.taxedIncentives || "";
+                    untaxedIncentivesInput.value = scenarioData.untaxedIncentives || "";
+                    downPaymentInput.value = scenarioData.downPayment || "";
+                    tradeInEquityInput.value = scenarioData.tradeInEquity || "";
+                    residualValueInput.value = scenarioData.residualValue || "";
+                    moneyFactorInput.value = scenarioData.moneyFactor || "";
+                    leaseTermSelect.value = scenarioData.leaseTerm || "24";
+                    mileageSelect.value = scenarioData.mileage || "10000";
+                    taxRateInput.value = scenarioData.taxRate || "8.75";
+                    acquisitionFeeInput.value = scenarioData.acquisitionFee || "";
+                    docFeeInput.value = scenarioData.docFee || "85";
+                    licenseRegFeesInput.value = scenarioData.licenseRegFees || "";
+                    msdsInput.value = scenarioData.msds || "0";
+                    dispositionFeeInput.value = scenarioData.dispositionFee || "";
+                    zeroDriveOffCheckbox.checked = scenarioData.zeroDriveOff || false;
+                    acqFeePaidUpfrontCheckbox.checked = scenarioData.acqFeePaidUpfront || false;
+                    docFeePaidUpfrontCheckbox.checked = scenarioData.docFeePaidUpfront || false;
+                    licRegPaidUpfrontCheckbox.checked = scenarioData.licRegPaidUpfront || false;
+                    notesField.value = scenarioData.notes || "";
+
+                    // For car selection, first set make, then populate models, then set model, etc.
+                    carMakeSelect.value = scenarioData.carMake || "";
+                    populateModels();
+                    // Use a setTimeout to ensure models are populated before trying to set model
+                    setTimeout(() => {
+                        carModelSelect.value = scenarioData.carModel || "";
+                        populateTrims();
+                        setTimeout(() => {
+                            carTrimSelect.value = scenarioData.carTrim || "";
+                            populateDriveTypes();
+                            setTimeout(() => {
+                                carDriveSelect.value = scenarioData.carDrive || "";
+                                calculateLease(); // Final calculation after all inputs are set
+                            }, 50); // Small delay for drive to populate
+                        }, 50); // Small delay for trims to populate
+                    }, 50); // Small delay for models to populate
+
+                    displayMessage(`Scenario "${scenarioData.label || `Scenario ${scenarioNum}`}" loaded successfully!`, false);
+                } else {
+                    displayMessage(`No data found for Scenario ${scenarioNum}.`, true);
+                }
+            } catch (e) {
+                console.error("Failed to load scenario:", e);
+                displayMessage("Failed to load scenario. The saved data might be corrupted.", true);
+            }
+        }
+
+        /**
+         * Loads scenario labels onto the load buttons on page load.
+         */
+        function loadScenarioLabels() {
+            for (let i = 1; i <= 3; i++) {
+                const scenarioLoadBtn = document.getElementById(`scenario${i}LoadBtn`);
+                const savedData = localStorage.getItem(`leaseScenario${i}`);
+                if (savedData) {
+                    try {
+                        const scenarioData = JSON.parse(savedData);
+                        scenarioLoadBtn.textContent = scenarioData.label || `Scenario ${i} (Unnamed)`;
+                        // Make saved buttons more prominent
+                        scenarioLoadBtn.classList.remove('text-gray-600', 'border-gray-300', 'hover:text-gray-800');
+                        scenarioLoadBtn.classList.add('text-blue-700', 'border-blue-500', 'hover:text-blue-900', 'bg-blue-100'); 
+                    } catch (e) {
+                        console.error(`Error parsing scenario ${i} data:`, e);
+                        scenarioLoadBtn.textContent = `Scenario ${i} (Corrupted)`;
+                        scenarioLoadBtn.classList.add('text-red-500', 'border-red-300'); // Indicate corrupted
+                        // Optionally clear corrupted data if needed:
+                        // localStorage.removeItem(`leaseScenario${i}`);
+                    }
+                } else {
+                    scenarioLoadBtn.textContent = `Scenario ${i} (Empty)`;
+                    // Reset styling for empty slots
+                    scenarioLoadBtn.classList.remove('text-blue-700', 'border-blue-500', 'hover:text-blue-900', 'bg-blue-100', 'text-red-500', 'border-red-300');
+                    scenarioLoadBtn.classList.add('text-gray-600', 'border-gray-300', 'hover:text-gray-800');
+                }
+            }
+        }
+
+        // Initial setup and calculation when the page loads
+        window.onload = function() {
+            // Set default values for lease term and tax rate upon load
+            leaseTermSelect.value = "24";
+            taxRateInput.value = "8.75";
+            docFeeInput.value = "85";
+            moneyFactorInput.value = "0.00135";
+            taxedIncentivesInput.value = "1000";
+            untaxedIncentivesInput.value = "0";
+
+            populateMakes(); // Populate car dropdowns
+            updateSellingPriceFromPercentage(); // Ensure selling price is calculated initially based on default percentage
+            calculateLease(); // Perform initial calculation
+            loadScenarioLabels(); // Load any previously saved scenario labels
+        };
+    </script>
+</body>
+</html>
