@@ -1047,12 +1047,18 @@
         /**
          * Rounds the value of the input field to the nearest integer and then calls calculateLease.
          * This ensures that fields like MSRP, Selling Price, etc., appear as whole numbers.
+         * It also handles non-numeric inputs by setting them to 0.
          * @param {HTMLInputElement} inputElement - The input element to round and process.
          */
         function roundAndCalculate(inputElement) {
-            if (inputElement && inputElement.value !== '') {
-                inputElement.value = Math.round(parseFloat(inputElement.value)).toFixed(0);
+            let value = parseFloat(inputElement.value);
+            // If value is NaN or null/undefined, set it to 0. Otherwise, round it.
+            if (isNaN(value) || value === null || value === undefined) {
+                value = 0;
+            } else {
+                value = Math.round(value);
             }
+            inputElement.value = value.toFixed(0); // Ensure it's displayed as a whole number
             calculateLease();
         }
 
@@ -1633,4 +1639,242 @@
                 // Ensure required fields show error if they triggered it
                 const msrp = parseFloat(msrpInput.value) || 0;
                 const sellingPrice = parseFloat(sellingPriceInput.value) || 0;
-                co
+                const residualValuePercent = parseFloat(residualValueInput.value) / 100 || 0;
+                const rawMoneyFactor = parseFloat(moneyFactorInput.value) || 0;
+                const leaseTerm = parseFloat(leaseTermSelect.value) || 0;
+
+                [
+                    { element: msrpInput, value: msrp },
+                    { element: sellingPriceInput, value: sellingPrice },
+                    { element: residualValueInput, value: residualValuePercent },
+                    { element: moneyFactorInput, value: rawMoneyFactor },
+                    { element: leaseTermSelect, value: leaseTerm }
+                ].forEach(item => {
+                    if (item.value <= 0 || isNaN(item.value)) {
+                        item.element.classList.add('required-field-error');
+                    }
+                });
+            }
+        }
+
+        /**
+         * Saves the current calculator state to a specified scenario slot in local storage.
+         * @param {number} scenarioNum - The scenario number (1, 2, or 3) to save to.
+         * @param {string} scenarioLabel - The label for this scenario.
+         */
+        function saveScenarioToSlot(scenarioNum, scenarioLabel) {
+            const scenarioData = {
+                // Save input values to restore scenario accurately
+                msrp: msrpInput.value,
+                sellingPrice: sellingPriceInput.value,
+                discountPercentage: discountPercentageInput.value,
+                taxedIncentives: taxedIncentivesInput.value,
+                untaxedIncentives: untaxedIncentivesInput.value,
+                downPayment: downPaymentInput.value,
+                tradeInEquity: tradeInEquityInput.value,
+                residualValue: residualValueInput.value,
+                moneyFactor: moneyFactorInput.value,
+                leaseTerm: leaseTermSelect.value,
+                mileage: mileageSelect.value,
+                taxRate: taxRateInput.value,
+                acquisitionFee: acquisitionFeeInput.value,
+                docFee: docFeeInput.value,
+                licenseRegFees: licenseRegFeesInput.value,
+                msds: msdsInput.value,
+                dispositionFee: dispositionFeeInput.value,
+                zeroDriveOff: zeroDriveOffCheckbox.checked,
+                acqFeePaidUpfront: acqFeePaidUpfrontCheckbox.checked,
+                docFeePaidUpfront: docFeePaidUpfrontCheckbox.checked,
+                licRegPaidUpfront: licRegPaidUpfrontCheckbox.checked,
+                carMake: carMakeSelect.value,
+                carModel: carModelSelect.value,
+                carTrim: carTrimSelect.value,
+                carDrive: carDriveSelect.value,
+                label: scenarioLabel // Use the provided label
+            };
+            localStorage.setItem(`leaseScenario${scenarioNum}`, JSON.stringify(scenarioData));
+        }
+
+        /**
+         * Determines the next available slot or cycles through slots, then saves the current scenario.
+         */
+        async function saveCurrentScenario() {
+            try {
+                const newScenarioLabel = newScenarioLabelInput.value.trim();
+
+                if (!newScenarioLabel) {
+                    displayMessage("Please enter a label for the scenario before saving.", true);
+                    return;
+                }
+
+                let targetSlot = -1;
+                // Try to find the next available empty slot
+                for (let i = 1; i <= 3; i++) {
+                    if (!localStorage.getItem(`leaseScenario${i}`)) {
+                        targetSlot = i;
+                        break;
+                    }
+                }
+
+                // If all slots are full, cycle to the next one from the last saved
+                if (targetSlot === -1) {
+                    lastSavedScenarioSlot = (lastSavedScenarioSlot % 3) + 1; // Cycle 1 -> 2 -> 3 -> 1
+                    targetSlot = lastSavedScenarioSlot;
+                    // Ask user for confirmation to overwrite
+                    const overwriteConfirmed = await customConfirm(`Scenario Slot ${targetSlot} is already in use. Do you want to overwrite it with "${newScenarioLabel}"?`);
+                    if (!overwriteConfirmed) {
+                        displayMessage("Scenario save cancelled.", false);
+                        return;
+                    }
+                }
+
+                // Call the existing saveScenarioToSlot function with the determined slot and new label
+                saveScenarioToSlot(targetSlot, newScenarioLabel); 
+
+                newScenarioLabelInput.value = ""; // Clear the input after saving
+                newScenarioLabelInput.placeholder = "Enter name for this scenario"; // Reset placeholder
+                displayMessage(`Scenario "${newScenarioLabel}" saved to Slot ${targetSlot}!`, false);
+                loadScenarioLabels(); // Update the buttons immediately
+            } catch (e) {
+                console.error("Failed to save current scenario:", e);
+                displayMessage("Failed to save scenario. An error occurred.", true);
+            }
+        }
+
+
+        /**
+         * Loads a saved scenario into the calculator inputs and recalculates.
+         * @param {number} scenarioNum - The scenario number (1, 2, or 3).
+         */
+        function loadScenario(scenarioNum) {
+            try {
+                const savedData = localStorage.getItem(`leaseScenario${scenarioNum}`);
+                if (savedData) {
+                    const scenarioData = JSON.parse(savedData);
+
+                    // Restore inputs
+                    msrpInput.value = scenarioData.msrp || "";
+                    sellingPriceInput.value = scenarioData.sellingPrice || "";
+                    discountPercentageInput.value = scenarioData.discountPercentage || 0;
+                    // Update both percentage and amount on load
+                    discountPercentageValueSpan.textContent = (parseFloat(scenarioData.discountPercentage) || 0).toFixed(2) + '%';
+                    const loadedMsrp = parseFloat(scenarioData.msrp) || 0;
+                    const loadedSellingPrice = parseFloat(scenarioData.sellingPrice) || 0;
+                    const loadedDiscountAmount = loadedMsrp - loadedSellingPrice;
+                    discountAmountValueSpan.textContent = `($${Math.round(loadedDiscountAmount).toFixed(0)} Discount)`;
+
+
+                    taxedIncentivesInput.value = scenarioData.taxedIncentives || "";
+                    untaxedIncentivesInput.value = scenarioData.untaxedIncentives || "";
+                    downPaymentInput.value = scenarioData.downPayment || "";
+                    tradeInEquityInput.value = scenarioData.tradeInEquity || "";
+                    residualValueInput.value = scenarioData.residualValue || "";
+                    moneyFactorInput.value = scenarioData.moneyFactor || "";
+                    leaseTermSelect.value = scenarioData.leaseTerm || "24";
+                    mileageSelect.value = scenarioData.mileage || "10000";
+                    taxRateInput.value = scenarioData.taxRate || "8.75";
+                    acquisitionFeeInput.value = scenarioData.acquisitionFee || "";
+                    docFeeInput.value = scenarioData.docFee || "85";
+                    licenseRegFeesInput.value = scenarioData.licenseRegFees || "";
+                    msdsInput.value = scenarioData.msds || "0";
+                    dispositionFeeInput.value = scenarioData.dispositionFee || "";
+                    zeroDriveOffCheckbox.checked = scenarioData.zeroDriveOff || false;
+                    acqFeePaidUpfrontCheckbox.checked = scenarioData.acqFeePaidUpfront || false;
+                    docFeePaidUpfrontCheckbox.checked = scenarioData.docFeePaidUpfront || false;
+                    licRegPaidUpfrontCheckbox.checked = scenarioData.licRegPaidUpfront || false;
+                    notesField.value = scenarioData.notes || "";
+
+                    // For car selection, first set make, then populate models, then set model, etc.
+                    carMakeSelect.value = scenarioData.carMake || "";
+                    populateModels();
+                    // Use a setTimeout to ensure models are populated before trying to set model
+                    setTimeout(() => {
+                        carModelSelect.value = scenarioData.carModel || "";
+                        populateTrims();
+                        setTimeout(() => {
+                            carTrimSelect.value = scenarioData.carTrim || "";
+                            populateDriveTypes();
+                            setTimeout(() => {
+                                carDriveSelect.value = scenarioData.carDrive || "";
+                                calculateLease(); // Final calculation after all inputs are set
+                            }, 50); // Small delay for drive to populate
+                        }, 50); // Small delay for trims to populate
+                    }, 50); // Small delay for models to populate
+
+                    displayMessage(`Scenario "${scenarioData.label || `Scenario ${scenarioNum}`}" loaded successfully!`, false);
+                } else {
+                    displayMessage(`No data found for Scenario ${scenarioNum}.`, true);
+                }
+            } catch (e) {
+                console.error("Failed to load scenario:", e);
+                displayMessage("Failed to load scenario. The saved data might be corrupted.", true);
+            }
+        }
+
+        /**
+         * Deletes a saved scenario from local storage.
+         * @param {number} scenarioNum - The scenario number (1, 2, or 3) to delete.
+         */
+        async function deleteScenario(scenarioNum) {
+            const scenarioName = document.getElementById(`scenario${scenarioNum}LoadBtn`).textContent;
+            const confirmed = await customConfirm(`Are you sure you want to delete scenario "${scenarioName}"? This action cannot be undone.`);
+            if (confirmed) {
+                localStorage.removeItem(`leaseScenario${scenarioNum}`);
+                displayMessage(`Scenario ${scenarioName} deleted.`, false);
+                loadScenarioLabels(); // Refresh button labels
+                resetCalculator(); // Optionally reset calculator to default after deleting
+            } else {
+                displayMessage("Scenario deletion cancelled.", false);
+            }
+        }
+
+
+        /**
+         * Loads scenario labels onto the load buttons on page load.
+         */
+        function loadScenarioLabels() {
+            for (let i = 1; i <= 3; i++) {
+                const scenarioLoadBtn = document.getElementById(`scenario${i}LoadBtn`);
+                const savedData = localStorage.getItem(`leaseScenario${i}`);
+                if (savedData) {
+                    try {
+                        const scenarioData = JSON.parse(savedData);
+                        scenarioLoadBtn.textContent = scenarioData.label || `Scenario ${i} (Unnamed)`;
+                        // Make saved buttons more prominent
+                        scenarioLoadBtn.classList.remove('text-gray-600', 'border-gray-300', 'hover:text-gray-800', 'text-gray-400', 'border-gray-200'); // Remove empty state colors
+                        scenarioLoadBtn.classList.add('text-blue-700', 'border-blue-500', 'hover:text-blue-900', 'bg-blue-100'); 
+                    } catch (e) {
+                        console.error(`Error parsing scenario ${i} data:`, e);
+                        scenarioLoadBtn.textContent = `Scenario ${i} (Corrupted)`;
+                        scenarioLoadBtn.classList.remove('text-gray-600', 'border-gray-300', 'hover:text-gray-800', 'text-gray-400', 'border-gray-200'); // Remove empty state colors
+                        scenarioLoadBtn.classList.add('text-red-500', 'border-red-300'); // Indicate corrupted
+                        // Optionally clear corrupted data if needed:
+                        // localStorage.removeItem(`leaseScenario${i}`);
+                    }
+                } else {
+                    scenarioLoadBtn.textContent = `Scenario ${i} (Empty)`;
+                    // Reset styling for empty slots to super light
+                    scenarioLoadBtn.classList.remove('text-blue-700', 'border-blue-500', 'hover:text-blue-900', 'bg-blue-100', 'text-red-500', 'border-red-300', 'hover:text-gray-800');
+                    scenarioLoadBtn.classList.add('text-gray-400', 'border-gray-200', 'hover:text-gray-500', 'hover:bg-gray-50'); // Super light gray for empty
+                }
+            }
+        }
+
+        // Initial setup and calculation when the page loads
+        window.onload = function() {
+            // Set default values for lease term and tax rate upon load
+            leaseTermSelect.value = "24";
+            taxRateInput.value = "8.75";
+            docFeeInput.value = "85";
+            moneyFactorInput.value = "0.00135";
+            taxedIncentivesInput.value = "1000";
+            untaxedIncentivesInput.value = "0";
+
+            populateMakes(); // Populate car dropdowns
+            updateSellingPriceFromPercentage(); // Ensure selling price is calculated initially based on default percentage
+            calculateLease(); // Perform initial calculation
+            loadScenarioLabels(); // Load any previously saved scenario labels
+        };
+    </script>
+</body>
+</html>
